@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const isWelcome = searchParams.get('welcome') === 'true'
@@ -302,5 +302,17 @@ export default function DashboardPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading your dashboard...</p>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
