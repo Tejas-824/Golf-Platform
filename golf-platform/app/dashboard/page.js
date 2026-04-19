@@ -40,7 +40,7 @@ function DashboardContent() {
     if (profileData?.charities) setCharity(profileData.charities)
 
     // Load scores
-    const scoresRes = await fetch('/api/scores')
+    const scoresRes = await fetch(`/api/scores?user_id=${session.user.id}`)
     const scoresData = await scoresRes.json()
     setScores(scoresData.scores || [])
 
@@ -70,14 +70,14 @@ function DashboardContent() {
 
     if (editingScore) {
       // Delete old and re-insert (simplest approach for assignment)
-      await fetch(`/api/scores?id=${editingScore.id}`, { method: 'DELETE' })
+      await fetch(`/api/scores?id=${editingScore.id}&user_id=${profile.id}`, { method: 'DELETE' })
       setEditingScore(null)
     }
 
     const res = await fetch('/api/scores', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ score, score_date: scoreForm.score_date }),
+      body: JSON.stringify({ user_id: profile.id, score, score_date: scoreForm.score_date }),
     })
 
     const data = await res.json()
@@ -92,7 +92,7 @@ function DashboardContent() {
 
   const handleDeleteScore = async (id) => {
     if (!confirm('Delete this score?')) return
-    await fetch(`/api/scores?id=${id}`, { method: 'DELETE' })
+    await fetch(`/api/scores?id=${id}&user_id=${profile.id}`, { method: 'DELETE' })
     loadDashboard()
   }
 
@@ -104,10 +104,17 @@ function DashboardContent() {
   }
 
   const handleSubscribe = async () => {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+
     const res = await fetch('/api/subscriptions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ plan: profile?.subscription_plan || 'monthly' }),
+      body: JSON.stringify({ 
+        user_id: profile?.id || session.user.id,
+        email: session.user.email,
+        plan: profile?.subscription_plan || 'monthly' 
+      }),
     })
     const data = await res.json()
     if (data.url) window.location.href = data.url
